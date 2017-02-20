@@ -191,6 +191,9 @@ class Lexer
   #Tokenized array
   @tokens
 
+  #Backup tokenized array for searching
+  @tokenBACKUP
+
   def initialize(input)
     @str = input
     splitstring(input)
@@ -205,7 +208,7 @@ class Lexer
 
   def processTokens()
     @tokens = @split.collect { |x| @@symbol[x] != nil ? @@symbol[x] : findValue(x)  }
-
+    @tokenBACKUP = @tokens.dup
   end
 
   def findValue(value)
@@ -233,7 +236,15 @@ class Lexer
   end
 
   def getOriginal(span)
-    return @split[span[0],span[1]]
+
+    index = @tokenBACKUP.each_index.select{|x| span[0] == @tokenBACKUP[x] }
+
+    index.each { |i|
+      if @tokenBACKUP[i..i+span.length-1] == span
+        return @split[i..i+span.length-1].join(' ')
+      end
+    }
+
   end
 
   def getReserved()

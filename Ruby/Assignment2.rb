@@ -4,6 +4,11 @@ CS401
 Assignment 2
 =end
 
+# Instructions for testing:
+# Create a new Analyzer object, using the test string
+# as an argument. Then call the 'run' function on the
+# Analyzer object.
+
 require 'strscan'
 
 class Lexer
@@ -16,7 +21,6 @@ class Lexer
 
       #While
       /while/ => ' while ',
-
 
       /end/ => ' end ',
 
@@ -53,7 +57,6 @@ class Lexer
       #Equals
       /(==)/ => ' == ',
 
-
       #Less Than or Equal to
       /(<=)|(=<)/ => ' <= ',
 
@@ -78,8 +81,6 @@ class Lexer
       #Close Parens
       /\)/ => ' ) ',
 
-
-
       #End of File
       /$/ => ' EOF',
 
@@ -88,53 +89,29 @@ class Lexer
 
   @@addSpaces = {
       '+' => ' + ',
-
       'while' => ' while ',
-
       'if' => ' if ',
-
       'then' => ' then ',
-
       'end' => ' end ',
-
       'else' => ' else ',
-
       ':=' => ' := ',
-
       'do' => ' do ',
-
       '*' => ' * ',
-
       '//' => ' // ',
-
       '/' => ' / ',
-
       '-' => ' - ',
-
       ';' => ' ; ',
-
       '==' => ' == ',
-
       '<' => ' < ',
-
       '>' => ' > ',
-
       '<=' => ' <= ',
-
       '=<' => ' <= ',
-
       '>=' => ' >= ',
-
       '=>' => ' >= ',
-
       'true' => ' true ',
-
       'false' => ' false ',
-
       '(' => ' ( ',
-
       ')' => ' ) ',
-
       '\n' => ' NEWLINE '
   }
 
@@ -194,28 +171,32 @@ class Lexer
   #Backup tokenized array for searching
   @tokenBACKUP
 
+  #Entry point into
   def initialize(input)
     @str = input
     splitstring(input)
     processTokens
   end
 
+  #Divide input string into an array delimited by whitespace
   def splitstring(input)
     preSplit = input.gsub!(Regexp.union(@@reserved.keys), @@addSpaces)
 
     @split = preSplit.gsub(/\s+/m, ' ').strip.split(' ') << 'EOF'
   end
 
+  #Tokenize each portion of string
   def processTokens()
     @tokens = @split.collect { |x| @@symbol[x] != nil ? @@symbol[x] : findValue(x)  }
     @tokenBACKUP = @tokens.dup
   end
 
+  #Ensure that all identifiers and integers are tokenized
   def findValue(value)
     case value
-      when /[0-9]+/
+      when /^[0-9]+$/
         @@symbolRegexp[:integer]
-      when /\w/
+      when /^[A-Za-z]+[A-Za-z\d_]*$/
         @@symbolRegexp[:identifier]
       else
         '???'
@@ -223,18 +204,17 @@ class Lexer
 
   end
 
+  #Look at the next token without removing it from the head
   def peek()
     @tokens[0]
   end
 
-  def getTokenText(index)
-    @split[index]
-  end
-
+  #Pop the next token from the head of the token list
   def nextToken()
     @tokens.shift
   end
 
+  #Find the original string for a set of tokens
   def getOriginal(span)
 
     index = @tokenBACKUP.each_index.select{|x| span[0] == @tokenBACKUP[x] }
@@ -247,42 +227,34 @@ class Lexer
 
   end
 
-  def getReserved()
-    @@reserved
-  end
-
-  def getAddSpaces()
-    @@addSpaces
-  end
-
-  def getsplit()
-    @split
-  end
-
-  def getSymbolRegexp()
-    @@symbolRegexp
-  end
-
 end
 
 class Analyzer
 
   @lexer
 
+  #Constructor
   def initialize(input)
     @lexer = Lexer.new(input)
   end
 
+  #Have we reached EOF token?
   def hasNextLine
     return false if @lexer.peek == 9999
 
     true
   end
 
+  #Construct next line of tokens from lexer
   def getNextTokens
     currentLine = []
 
     loop do
+
+      if @lexer.peek == '???'
+        puts 'ERROR: Unrecognized token'
+        return false
+      end
 
       currentLine << @lexer.nextToken
 
@@ -301,6 +273,7 @@ class Analyzer
     currentLine[0..-2]
   end
 
+  #Use argument to assemble token lines
   def getNextLine(query)
 
     currentLine = []
@@ -327,6 +300,7 @@ class Analyzer
     currentLine[0..-2]
   end
 
+  #Entry point for Analyzer
   def run
     if beginTest
       puts 'Passed!'
@@ -335,6 +309,7 @@ class Analyzer
     end
   end
 
+  #Begin assembling and parsing token lines
   def beginTest
     puts 'Analyzing...'
     while hasNextLine
@@ -347,6 +322,7 @@ class Analyzer
 
   end
 
+  #Checks to see if each line of program qualifies as a statement
   def statements?(query)
     until query.empty?
       unless statement?(getNextLine(query))
@@ -356,6 +332,7 @@ class Analyzer
     true
   end
 
+  #Checks to see if argument is an white, if, or assignment statement
   def statement?(query)
     if query == nil or query == [] or query == false
       return false
@@ -401,7 +378,7 @@ class Analyzer
           return false
         end
 
-        unless lexp?(query[1.._then-1]) and statements?(query[_then+1.._else-1]) and statements?(query[_else+1..-1])
+        unless lexp?(query[1.._then-1]) and statements?(query[_then+1.._else-1]) and statements?(query[_else+1..-2])
           puts 'Error in If statement.'
           puts @lexer.getOriginal(query)
           return false
@@ -416,6 +393,7 @@ class Analyzer
     true
   end
 
+  #Is this an add, subtract, or multiplication operation?
   def addop?(query)
     if query.size == 1
       return mulop?(query)
@@ -441,6 +419,7 @@ class Analyzer
     false
   end
 
+  #Is this multiplication, division, or factor?
   def mulop?(query)
     if query.size == 1
       return factor?(query)
@@ -459,6 +438,7 @@ class Analyzer
     false
   end
 
+  #Is this an integer, identifier, or parenthesized add operation?
   def factor?(query)
     if query.size == 1 and (query[0] == 888 or query[0] == 999)
       return true
@@ -471,6 +451,7 @@ class Analyzer
     false
   end
 
+  #Is this a logical expression or logical term?
   def lexp?(query)
     if query.size == 1
       return lterm?(query)
@@ -488,6 +469,7 @@ class Analyzer
     false
   end
 
+  #Is this a logical factor or negation of a logical factor?
   def lterm?(query)
     if query.size == 1
       return lfactor?(query)
@@ -503,6 +485,7 @@ class Analyzer
     false
   end
 
+  #Is this true, false, or a relational operation?
   def lfactor?(query)
     if query == 58 or query == 59
       true
@@ -514,6 +497,7 @@ class Analyzer
     end
   end
 
+  #Is this <=, <, or = ?
   def relop?(query)
     _comparator = query.find_index(53)
 
@@ -534,6 +518,9 @@ class Analyzer
   end
 end
 
+#########################
+###   Begin Tests
+#########################
 
 str = <<-LINE
 prev := 0;curr := 1;iter := 0;
@@ -572,12 +559,22 @@ b = Analyzer.new strNope
 b.run
 
 strTests = [
+    #Pass
+    '//Just a file with comments',
+    #Pass
+    'if x < 1 then x := 1; y := 2; else x := 2; y:= 1; end;',
+    #Fail
     'prev := 0 curr := +1;',
+    #Fail
     'iter := -0;',
+    #Fail
     '/ not a comment while N−− do',
+    #Fail
     'tmp := prev (+ curr); prev = curr ;',
+    #Fail
     'curr := ;',
-    '//Just a file with comments'
+    #Fail
+    '1_u$er := 1 + x;'
 ]
 
 strTests.each { |x|
@@ -588,3 +585,4 @@ strTests.each { |x|
   c = Analyzer.new x
   c.run
 }
+

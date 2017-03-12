@@ -3,7 +3,7 @@
 % CS401
 % Assignment 3
 
-
+:-initialization(run).
 :- dynamic pair/2.
 
 pair(x,y).
@@ -11,7 +11,7 @@ pair(x,y).
 is_a(X,Y) :- pair(X,Y).
 is_a(X,Z) :- pair(Y,Z), is_a(X,Y).
 
-start :-
+run :-
   write('You may begin to type facts and queries in the form'),
   nl,
   write('_ is a _.'),
@@ -20,11 +20,9 @@ start :-
   nl,
   write('Is _ a _?'),
   nl,
-  write('Type "exit." to quit'),
-  nl,
   repeat,
     (
-    read_string(user_input, "\n", "\r\t", _, X),nl,
+    read_string(user_input, "\n", "\r\t", _, X),
     clean_string(X, Y),
     assess(Y),
     fail
@@ -32,7 +30,6 @@ start :-
 
 assess(X) :-
   (
-  last(X, 'exit.') -> write('Quitting...'), nl, retractall(pair(,));
   is_statement(X) -> make_fact(X);
   is_query(X) -> find_answer(X)
   ).

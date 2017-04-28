@@ -82,33 +82,29 @@ public class GenericJava {
             }
         }
 
-        if ( compare( det( matrix ), (E) Double.valueOf(0)) == 0)
-            throw new RuntimeException( "Matrix is singular, there are either no solutions or infinite solutions.");
+        if ( !invertible(matrix) )
+            throw new RuntimeException( "Matrix is singular, there are no solutions.");
 
         E[] solution = (E[]) Array.newInstance( Number.class, vector.length );
 
         for (int i = N - 1; i >= 0; i--) {
-            E sum = (E) Double.valueOf(0.0);
+            E sum = generic( 0 , matrix[0][0].getClass());
             for (int j = i + 1; j < N; j++)
                 sum = plus( sum, times( matrix[i][j], solution[j] ));
 
-            solution[i] =
-                    divide( minus( vector[i], sum), matrix[i][i] );
+            solution[i] = (E)
+                    divide( minus( vector[i], (E) sum), matrix[i][i] );
         }
 
-//        for ( int i = 0; i < solution.length; i++ )
-//            solution[i] = (E) (Math.round( solution[i].doubleValue() * 1000.0 ) / 1000.0);
         return solution;
     }
 
-    private <E extends Number> E det( E[][] matrix ) {
-        E result = (E) Double.valueOf(1);
-
+    private <E extends Number> boolean invertible( E[][] matrix ) {
         for ( int i = 0; i < matrix.length; i++ ) {
-            result = times( result, matrix[i][i] );
+            if ( compare( matrix[i][i], 0) == 0 ) return false;
         }
 
-        return result;
+        return true;
     }
 
     private <E extends Number> E times ( E x, E y ) {
@@ -116,7 +112,7 @@ public class GenericJava {
         //Floating point
         if ( x instanceof Double && y instanceof Double )
             return (E) Double.valueOf((Double) x * (Double) y) ;
-        else if ( x instanceof Float && y instanceof Float )
+        else if ( x instanceof Float && y instanceof Float)
             return (E) Float.valueOf((Float) x * (Float) y);
         //Integral
         else if ( x instanceof Long && y instanceof Long )
@@ -124,12 +120,12 @@ public class GenericJava {
         else if ( x instanceof Integer && y instanceof Integer )
             return (E) Integer.valueOf((Integer) x * (Integer) y);
         else
-            throw new RuntimeException("Unsupported type");
+            throw new RuntimeException("Unsupported type " + x.getClass());
     }
 
     private <E extends Number> E divide ( E x, E y ) {
         //Floating point
-        if ( x instanceof Double && y instanceof Double )
+        if ( x instanceof Double )
             return (E) Double.valueOf((Double) x / (Double) y);
         else if ( x instanceof Float && y instanceof Float )
             return (E) Float.valueOf((Float) x / (Float) y);
@@ -139,7 +135,7 @@ public class GenericJava {
         else if ( x instanceof Integer && y instanceof Integer )
             return (E) Integer.valueOf((Integer) x / (Integer) y);
         else
-            throw new RuntimeException("Unsupported type");
+            throw new RuntimeException("Unsupported type: " + x.getClass());
     }
 
     private <E extends Number> E plus ( E x, E y ) {
@@ -154,7 +150,8 @@ public class GenericJava {
         else if ( x instanceof Integer && y instanceof Integer )
             return (E) Integer.valueOf((Integer) x + (Integer) y);
         else
-            throw new RuntimeException("Unsupported type");
+            throw new RuntimeException("Unsupported type: " + x.getClass());
+
     }
 
     private <E extends Number> E minus ( E x, E y ) {
@@ -169,14 +166,28 @@ public class GenericJava {
         else if ( x instanceof Integer && y instanceof Integer )
             return (E) Integer.valueOf((Integer) x - (Integer) y);
         else
-            throw new RuntimeException("Unsupported type");
+            throw new RuntimeException("Unsupported type: " + x.getClass());
+
     }
 
     private <E extends Number> E abs( E val ) {
         if ( compare( val, (E) Double.valueOf(0)) >= 0 )
             return val;
         else
-            return (E) times( -1.0, val );
+            return (E) times( generic( 1, val.getClass()), val );
+    }
+
+    private <E extends Number> E generic( Number val, Class<?> clazz ) {
+        if ( clazz.equals(Double.class))
+            return (E) Double.valueOf(val.doubleValue());
+        else if ( clazz.equals(Integer.class))
+            return (E) Integer.valueOf(val.intValue());
+        else if ( clazz.equals(Float.class))
+            return (E) Float.valueOf(val.floatValue());
+        else if ( clazz.equals(Long.class))
+            return (E) Long.valueOf(val.longValue());
+        else
+            throw new RuntimeException("Unsupported type: " + clazz );
     }
 
     private <E extends Number> int compare(E x, E y) {
